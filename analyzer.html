@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phishing Shield - URL Security Check</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .input-section {
+      margin-bottom: 30px;
+    }
+
+    .input-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type="text"]::placeholder {
+      color: #999;
+    }
+
+    button {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .spinner {
+      border: 3px solid #f0f0f0;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #667eea;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .result {
+      display: none;
+    }
+
+    .result.show {
+      display: block;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .result-card {
+      background: #f9f9f9;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 25px;
+      border: 1px solid #f0f0f0;
+    }
+
+    .url-display {
+      margin-bottom: 20px;
+    }
+
+    .url-label {
+      font-size: 11px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .url-text {
+      font-size: 13px;
+      color: #333;
+      word-break: break-all;
+      font-family: 'Courier New', monospace;
+      background: white;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .risk-section {
+      margin-top: 25px;
+    }
+
+    .risk-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .risk-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .risk-percentage {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .risk-bar {
+      width: 100%;
+      height: 10px;
+      background: #e0e0e0;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .risk-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #67bb6a 0%, #ffb347 50%, #ff6b6b 100%);
+      width: 0%;
+      transition: width 0.6s ease-out;
+    }
+
+    .verdict-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .verdict-badge.safe {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .verdict-badge.suspicious {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .verdict-badge.phishing {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .reasons {
+      margin-top: 25px;
+    }
+
+    .reasons-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .reasons-list {
+      list-style: none;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+    }
+
+    .reasons-list li {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 13px;
+      color: #555;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .reasons-list li:last-child {
+      border-bottom: none;
+    }
+
+    .reason-icon {
+      margin-top: 2px;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .action-btn {
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      color: #333;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .action-btn:hover {
+      background: #f9f9f9;
+      border-color: #667eea;
+    }
+
+    .error-box {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      border: 1px solid #f5c6cb;
+      display: none;
+    }
+
+    .error-box.show {
+      display: block;
+    }
+
+    .footer-text {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔐 Phishing Shield</h1>
+      <p>Check if a URL is safe to open</p>
+    </div>
+
+    <div class="content">
+      <div class="error-box" id="errorBox"></div>
+
+      <div class="input-section">
+        <label class="input-label">Enter URL</label>
+        <div class="input-group">
+          <input
+            type="text"
+            id="urlInput"
+            placeholder="https://example.com"
+            onkeypress="if(event.key === 'Enter') analyzeUrl()"
+          >
+          <button onclick="analyzeUrl()" id="analyzeBtn">Check</button>
+        </div>
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Analyzing...</div>
+      </div>
+
+      <div class="result" id="result">
+        <div class="result-card">
+          <div class="url-display">
+            <div class="url-label">URL</div>
+            <div class="url-text" id="resultUrl"></div>
+          </div>
+
+          <div class="risk-section">
+            <div class="risk-header">
+              <span class="risk-title">Security Risk</span>
+              <span class="risk-percentage"><span id="riskScore">0</span>%</span>
+            </div>
+            <div class="risk-bar">
+              <div class="risk-fill" id="riskFill"></div>
+            </div>
+            <div style="text-align: right;">
+              <span class="verdict-badge" id="verdict">SAFE</span>
+            </div>
+          </div>
+
+          <div class="reasons" id="reasonsContainer">
+            <div class="reasons-title">Findings</div>
+            <ul class="reasons-list" id="reasonsList"></ul>
+          </div>
+
+          <div class="actions">
+            <button class="action-btn" onclick="openUrl()" id="openBtn" style="display: none;">
+              ✅ Open Link
+            </button>
+            <button class="action-btn" onclick="copyUrl()">
+              📋 Copy URL
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-text">
+        Friction protects you. Take a moment, make a decision.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_SERVER = 'http://localhost:3000';
+
+    async function analyzeUrl() {
+      const url = document.getElementById('urlInput').value.trim();
+
+      if (!url) {
+        showError('Please enter a URL');
+        return;
+      }
+
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        showError('URL must start with http:// or https://');
+        return;
+      }
+
+      showLoading(true);
+      clearError();
+      document.getElementById('analyzeBtn').disabled = true;
+
+      try {
+        const response = await fetch(`${API_SERVER}/api/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+
+        if (!response.ok) {
+          throw new Error('API error');
+        }
+
+        const result = await response.json();
+        displayResult(result, url);
+
+      } catch (error) {
+        showError('Could not analyze URL. Please check your connection.');
+        console.error('Error:', error);
+      } finally {
+        showLoading(false);
+        document.getElementById('analyzeBtn').disabled = false;
+      }
+    }
+
+    function displayResult(result, originalUrl) {
+      document.getElementById('resultUrl').textContent = originalUrl;
+      document.getElementById('riskScore').textContent = result.riskScore;
+
+      const riskFill = document.getElementById('riskFill');
+      riskFill.style.width = result.riskScore + '%';
+
+      const verdictEl = document.getElementById('verdict');
+      verdictEl.textContent = result.verdict;
+      verdictEl.className = 'verdict-badge';
+
+      if (result.safe) {
+        verdictEl.classList.add('safe');
+        document.getElementById('openBtn').style.display = 'block';
+      } else if (result.riskScore >= 70) {
+        verdictEl.classList.add('phishing');
+        document.getElementById('openBtn').style.display = 'none';
+      } else {
+        verdictEl.classList.add('suspicious');
+        document.getElementById('openBtn').style.display = 'none';
+      }
+
+      const reasonsList = document.getElementById('reasonsList');
+      if (result.reasons.length > 0) {
+        reasonsList.innerHTML = result.reasons
+          .map(reason => `<li><span class="reason-icon">⚠️</span><span>${reason}</span></li>`)
+          .join('');
+      } else {
+        reasonsList.innerHTML = '<li><span class="reason-icon">✅</span><span>This URL appears to be safe</span></li>';
+      }
+
+      document.getElementById('result').classList.add('show');
+      window.scrollTo({ top: document.querySelector('.result').offsetTop - 100, behavior: 'smooth' });
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'block' : 'none';
+    }
+
+    function showError(message) {
+      const errorBox = document.getElementById('errorBox');
+      errorBox.textContent = message;
+      errorBox.classList.add('show');
+    }
+
+    function clearError() {
+      document.getElementById('errorBox').classList.remove('show');
+    }
+
+    function openUrl() {
+      const url = document.getElementById('urlInput').value.trim();
+      if (url) {
+        window.open(url, '_blank');
+      }
+    }
+
+    function copyUrl() {
+      const url = document.getElementById('urlInput').value.trim();
+      if (url) {
+        navigator.clipboard.writeText(url).then(() => {
+          alert('URL copied to clipboard');
+        });
+      }
+    }
+
+    document.getElementById('urlInput').focus();
+  </script>
+</body>
+</html>
